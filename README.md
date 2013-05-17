@@ -27,8 +27,10 @@ Howell](http://research.microsoft.com/en-us/people/howell/).
 ## Demos
 
 [Tile game](http://waterfallengineering.github.com/reanimator/tile-game/index.html)
+There is a functional block demo included in the demos/ directory.
 
-# Building
+# Development
+## Building
 
 You can build Reanimator with the following instructions in the
 source directory.
@@ -38,6 +40,17 @@ source directory.
 
 The built files will be placed in the dist/ directory. The demos will use
 the files in dist/ when run.
+
+## Adding plugins
+
+Plugins can be added by adding a file in lib/reanimator/plugins which
+contains the plugin, then adding a line to lib/reanimator.js to tell the
+build script to include the plugin in the build.
+
+# Limitations
+
+At this time, CSS mouse-related (notably, hover) events are not recorded or
+replayed.
 
 # API
 
