@@ -23,10 +23,21 @@ Reanimator was inspired by
 [James Mickens](http://research.microsoft.com/en-us/people/mickens/), [Jeremy
 Elson](http://research.microsoft.com/en-us/people/jelson/), and [Jon
 Howell](http://research.microsoft.com/en-us/people/howell/).
-
+ 
 ## Demos
 
 [Tile game](http://waterfallengineering.github.com/reanimator/tile-game/index.html)
+
+# Building
+
+You can build Reanimator with the following instructions in the
+source directory.
+
+    npm install
+    make
+
+The built files will be placed in the dist/ directory. The demos will use
+the files in dist/ when run.
 
 # API
 
