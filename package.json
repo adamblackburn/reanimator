@@ -4,7 +4,9 @@
     "author": "Lon Ingram <lon@waterfallmobile.com>",
     "description": "Capture and replay web application execution traces",
 
-    "devDependencies": {
+    "dependencies": {
+	"phantomjs": "1.9.0-3",
+	"almond": "0.2.5",
         "requirejs": "2.1.x",
         "cajon": "0.0.x",
         "lodash": "1.0.0-rc.3",
