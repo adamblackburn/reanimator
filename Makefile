@@ -7,7 +7,7 @@ TEST_SLOW ?= 2000
 NODE_MODULES = $(PWD)/node_modules
 SERVER_PID_FILE := $(PWD)/$(shell echo ".test-server-pid.$$RANDOM")
 PHANTOM_PID_FILE := $(PWD)/$(shell echo ".phantom-pid.$$RANDOM")
-JS_FILES = $(shell find lib -name "*.js" -type f) 
+JS_FILES = $(shell find lib -path lib/selenium-webdriver -prune -o -name "*.js" -type f) 
 JQUERY_VERSION=1.8.3
 
 all: dist/reanimator.js \
@@ -26,6 +26,11 @@ demos/tile-game/js/reanimator.js: dist/reanimator.js
 	rm -f demos/tile-game/js/reanimator-jquery*.js
 	ln -s $(PWD)/dist/reanimator-jquery.$(JQUERY_VERSION).js \
 			demos/tile-game/js/
+	rm -f demos/checkers/js/reanimator.js
+	ln -s $(PWD)/dist/reanimator.js demos/checkers/js/reanimator.js
+	rm -f demos/checkers/js/reanimator-jquery*.js
+	ln -s $(PWD)/dist/reanimator-jquery.$(JQUERY_VERSION).js \
+			demos/checkers/js/
 
 fixture-server:
 	@cd tests/fixtures
