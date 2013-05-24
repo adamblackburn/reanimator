@@ -6,7 +6,7 @@
     include: ['reanimator'],
     wrap: {
         start: '(function (global) {',
-        end: 'require("reanimator");\n}(this))'
+        end: 'require("reanimator");\n}(this));'
     },
 
     optimize: 'none',
