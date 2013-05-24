@@ -1,6 +1,6 @@
 (function (global) {
 /**
- * almond 0.2.3 Copyright (c) 2011-2012, The Dojo Foundation All Rights Reserved.
+ * almond 0.2.5 Copyright (c) 2011-2012, The Dojo Foundation All Rights Reserved.
  * Available via the MIT or new BSD license.
  * see: http://github.com/jrburke/almond for details
  */
@@ -358,9 +358,15 @@ var requirejs, require, define;
         if (forceSync) {
             main(undef, deps, callback, relName);
         } else {
+            //Using a non-zero value because of concern for what old browsers
+            //do, and latest browsers "upgrade" to 4 if lower value is used:
+            //http://www.whatwg.org/specs/web-apps/current-work/multipage/timers.html#dom-windowtimers-settimeout:
+            //If want a value immediately, use require('id') instead -- something
+            //that works in almond on the global level, but not guaranteed and
+            //unlikely to work in other AMD implementations.
             setTimeout(function () {
                 main(undef, deps, callback, relName);
-            }, 15);
+            }, 4);
         }
 
         return req;
@@ -372,6 +378,9 @@ var requirejs, require, define;
      */
     req.config = function (cfg) {
         config = cfg;
+        if (config.deps) {
+            req(config.deps, config.callback);
+        }
         return req;
     };
 
@@ -9913,6 +9922,8 @@ function getCaptureOnHandlerFn(fn) {
         details: {}
       };
 
+      console.log("event: " + originalEvent);
+
       if (global.MouseEvent && originalEvent instanceof MouseEvent) {
         entry.details.type = 'MouseEvent';
       } else if (global.KeyboardEvent && 
@@ -10020,8 +10031,8 @@ function fix(event) {
 }
 
 Reanimator.plug('jquery', {
-  init: function init(native) {
-    _native = native;
+  init: function init(xnative) {
+    _native = xnative;
   },
   capture: jquery_capture,
   beforeReplay: function (log, config) {
@@ -10037,8 +10048,7 @@ Reanimator.plug('jquery', {
 
 define("reanimator/plugins/jquery-1.8.3", function(){});
 
-define('reanimator-jquery.1.8.3',['require','exports','module','jquery-1.8.3','reanimator/plugins/jquery-1.8.3'],function (require, exports, module) {
-/* vim: set et ts=2 sts=2 sw=2: */
+define('reanimator-jquery.1.8.3',['require','exports','module','jquery-1.8.3','reanimator/plugins/jquery-1.8.3'],function (require, exports, module) {/* vim: set et ts=2 sts=2 sw=2: */
 
 require('jquery-1.8.3');
 require('reanimator/plugins/jquery-1.8.3');

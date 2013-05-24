@@ -1,6 +1,6 @@
 (function (global) {
 /**
- * almond 0.2.3 Copyright (c) 2011-2012, The Dojo Foundation All Rights Reserved.
+ * almond 0.2.5 Copyright (c) 2011-2012, The Dojo Foundation All Rights Reserved.
  * Available via the MIT or new BSD license.
  * see: http://github.com/jrburke/almond for details
  */
@@ -358,9 +358,15 @@ var requirejs, require, define;
         if (forceSync) {
             main(undef, deps, callback, relName);
         } else {
+            //Using a non-zero value because of concern for what old browsers
+            //do, and latest browsers "upgrade" to 4 if lower value is used:
+            //http://www.whatwg.org/specs/web-apps/current-work/multipage/timers.html#dom-windowtimers-settimeout:
+            //If want a value immediately, use require('id') instead -- something
+            //that works in almond on the global level, but not guaranteed and
+            //unlikely to work in other AMD implementations.
             setTimeout(function () {
                 main(undef, deps, callback, relName);
-            }, 15);
+            }, 4);
         }
 
         return req;
@@ -372,6 +378,9 @@ var requirejs, require, define;
      */
     req.config = function (cfg) {
         config = cfg;
+        if (config.deps) {
+            req(config.deps, config.callback);
+        }
         return req;
     };
 
@@ -398,8 +407,7 @@ var requirejs, require, define;
 
 define("../node_modules/almond/almond", function(){});
 
-define('reanimator/core',['require','exports','module'],function (require, exports, module) {
-/* vim: set et ts=2 sts=2 sw=2: */
+define('reanimator/core',['require','exports','module'],function (require, exports, module) {/* vim: set et ts=2 sts=2 sw=2: */
 var plugins = {};
 var native = {};
 
@@ -640,8 +648,7 @@ module.exports = global.Reanimator = {
 
 });
 
-define('reanimator/plugins/date',['require','exports','module','../core'],function (require, exports, module) {
-/* vim: set et ts=2 sts=2 sw=2: */
+define('reanimator/plugins/date',['require','exports','module','../core'],function (require, exports, module) {/* vim: set et ts=2 sts=2 sw=2: */
 var Reanimator = require('../core');
 
 var replay = {};
@@ -760,8 +767,7 @@ Reanimator.plug('date', {
 
 });
 
-define('reanimator/plugins/interrupts',['require','exports','module','../core'],function (require, exports, module) {
-/* vim: set et ts=2 sts=2 sw=2: */
+define('reanimator/plugins/interrupts',['require','exports','module','../core'],function (require, exports, module) {/* vim: set et ts=2 sts=2 sw=2: */
 /*jshint evil:true */
 var Reanimator = require('../core');
 
@@ -907,8 +913,7 @@ Reanimator.plug('setInterval', {
 
 });
 
-define('reanimator/plugins/random',['require','exports','module','../core'],function (require, exports, module) {
-/* vim: set et ts=2 sts=2 sw=2: */
+define('reanimator/plugins/random',['require','exports','module','../core'],function (require, exports, module) {/* vim: set et ts=2 sts=2 sw=2: */
 /*jshint evil:true */
 var Reanimator = require('../core');
 
@@ -953,8 +958,119 @@ Reanimator.plug('random', {
 
 });
 
-define('reanimator/plugins/document-create-event',['require','exports','module','../core'],function (require, exports, module) {
-/* vim: set et ts=2 sts=2 sw=2: */
+define('reanimator/plugins/scroll',['require','exports','module','../core'],function (require, exports, module) {/* vim: set et ts=2 sts=2 sw=2: */
+/*jshint evil:true */
+var Reanimator = require('../core');
+var _native;
+
+Reanimator.plug('scroll', {
+  init: function init(native) {
+    _native = native;
+    console.log('scroll init');
+  },
+
+  capture: function capture(log, config) {
+    _log = log;
+    $(document).scroll(function () {
+      entry = {
+        time: _native.Date.now(),
+        type: 'scroll',
+        details: {top: $(document).scrollTop()}
+      };
+      if (_log) {
+        _log.events.push(entry)
+      }
+    });
+  },
+
+  replay: function (entry) {
+    console.log(entry.details.top);
+    $(document).scrollTop(entry.details.top);
+  },
+
+  beforeReplay: function replay(log, config) {
+  },
+
+  cleanUp: function () {
+    _log = null;
+    _native = null;
+   // TODO: should probably remove JQuery event handler
+  }
+});
+
+});
+
+define('reanimator/plugins/form',['require','exports','module','../core'],function (require, exports, module) {/* vim: set et ts=2 sts=2 sw=2: */
+/*jshint evil:true */
+var Reanimator = require('../core');
+var _native;
+
+Reanimator.plug('form', {
+  init: function init(native) {
+    _native = native;
+    console.log('form init');
+  },
+
+  capture: function capture(log, config) {
+    _log = log;
+    $("body").on("change", "input,textarea", function () {
+
+      // start at the node that triggered the event
+      var n = $(this);
+
+      // construct a tree "address" for the node n
+      // as a way to reference it later
+      var domaddr = new Array();
+      while (n.index() != -1) {
+	domaddr.push(n.index());
+	n = n.parent();
+      }
+
+      // store the address and updated value in the tree
+      entry = {
+        time: _native.Date.now(),
+        type: 'form',
+        details: {val: $(this).val(), domaddr: domaddr}
+      };
+
+      // log the event
+      if (_log) {
+        _log.events.push(entry)
+      }
+    });
+  },
+
+  replay: function (entry) {
+    // load the dom address of the node
+    var domaddr = entry.details.domaddr;
+
+    // start at the top
+    var el = $(document);
+
+    // walk through the address
+    while (domaddr.length > 0) {
+      // popping index values and moving into the node
+      el = el.children();
+      el = $(el.get(domaddr.pop()));
+    }
+
+    // found it; set the value
+    $(el).val(entry.details.val);
+  },
+
+  beforeReplay: function replay(log, config) {
+  },
+
+  cleanUp: function () {
+    _log = null;
+    _native = null;
+   // TODO: should probably remove JQuery event handler
+  }
+});
+
+});
+
+define('reanimator/plugins/document-create-event',['require','exports','module','../core'],function (require, exports, module) {/* vim: set et ts=2 sts=2 sw=2: */
 var Reanimator = require('../core');
 
 var replay = {};
@@ -988,8 +1104,7 @@ Reanimator.plug('document-create-event', {
 
 });
 
-define('reanimator/util/event/serialization',['require','exports','module'],function (require, exports, module) {
-/* vim: set et ts=2 sts=2 sw=2: */
+define('reanimator/util/event/serialization',['require','exports','module'],function (require, exports, module) {/* vim: set et ts=2 sts=2 sw=2: */
 
 function serialize(ev) {
   var result = {};
@@ -1075,8 +1190,7 @@ module.exports = Reanimator.util.event.serialization;
 
 });
 
-define('reanimator/util/event/create',['require','exports','module','../../core'],function (require, exports, module) {
-/* vim: set et ts=2 sts=2 sw=2: */
+define('reanimator/util/event/create',['require','exports','module','../../core'],function (require, exports, module) {/* vim: set et ts=2 sts=2 sw=2: */
 var Reanimator = require('../../core');
 
 var eventCreators = {
@@ -1246,8 +1360,7 @@ module.exports = Reanimator.util.event.create;
 
 });
 
-define('reanimator/plugins/dom',['require','exports','module','../core','../util/event/serialization','../util/event/create'],function (require, exports, module) {
-/* vim: set et ts=2 sts=2 sw=2: */
+define('reanimator/plugins/dom',['require','exports','module','../core','../util/event/serialization','../util/event/create'],function (require, exports, module) {/* vim: set et ts=2 sts=2 sw=2: */
 var Reanimator = require('../core');
 var serialization = require('../util/event/serialization');
 var create = require('../util/event/create');
@@ -1289,8 +1402,7 @@ Reanimator.plug('dom', {
 
 });
 
-define('reanimator/plugins/dom-content-loaded',['require','exports','module','../core','../util/event/serialization','../util/event/create'],function (require, exports, module) {
-/* vim: set et ts=2 sts=2 sw=2: */
+define('reanimator/plugins/dom-content-loaded',['require','exports','module','../core','../util/event/serialization','../util/event/create'],function (require, exports, module) {/* vim: set et ts=2 sts=2 sw=2: */
 /*jshint evil:true */
 var Reanimator = require('../core');
 var serialization = require('../util/event/serialization');
@@ -1396,8 +1508,7 @@ Reanimator.plug('dom-content-loaded', {
 
 });
 
-define('reanimator/util/event/synthetic',['require','exports','module','../../core'],function (require, exports, module) {
-/*jslint es5: true */
+define('reanimator/util/event/synthetic',['require','exports','module','../../core'],function (require, exports, module) {/*jslint es5: true */
 /**
  * Synthetic events for working around browsers that don't provide
  * XMLHttpRequestProgressEvent
@@ -1720,8 +1831,7 @@ Reanimator.util.event.synthetic = module.exports = events;
 
 });
 
-define('reanimator/plugins/xhr',['require','exports','module','../core','../util/event/serialization','../util/event/create','../util/event/synthetic'],function (require, exports, module) {
-/* vim: set et ts=2 sts=2 sw=2: */
+define('reanimator/plugins/xhr',['require','exports','module','../core','../util/event/serialization','../util/event/create','../util/event/synthetic'],function (require, exports, module) {/* vim: set et ts=2 sts=2 sw=2: */
 var Reanimator = require('../core');
 var serialization = require('../util/event/serialization');
 var create = require('../util/event/create');
@@ -2109,11 +2219,11 @@ Reanimator.plug('xhr', {
 
 });
 
-define('reanimator/plugins/local-storage',['require','exports','module','../core'],function (require, exports, module) {
-/* vim: set et ts=2 sts=2 sw=2: */
+define('reanimator/plugins/local-storage',['require','exports','module','../core'],function (require, exports, module) {/* vim: set et ts=2 sts=2 sw=2: */
 var Reanimator = require('../core');
 
 var _native, _log;
+var _capture = true;
 
 /**
  * Capture all keys in localStorage in index order
@@ -2152,6 +2262,8 @@ Reanimator.plug('local-storage', {
   },
   capture: function xhr_capture(log, config) {
     _log = log;
+    _capture = true;
+
 
     _log.localStorage = {
         state: snapshot()
@@ -2159,6 +2271,7 @@ Reanimator.plug('local-storage', {
   },
   beforeReplay: function (log, config) {
     var k;
+    _capture = false;
 
     _log = log;
 
@@ -2170,7 +2283,8 @@ Reanimator.plug('local-storage', {
     restore(_log.localStorage.state);
   },
   cleanUp: function xhr_cleanUp() {
-    restore(_log.localStorage.preReplayState || []);
+    if (!_capture)
+      restore(_log.localStorage.preReplayState || []);
     window.localStorage.getItem = _native.localStorage_getItem;
     window.localStorage.setItem = _native.localStorage_setItem;
     window.localStorage.clear = _native.localStorage_clear;
@@ -2179,13 +2293,14 @@ Reanimator.plug('local-storage', {
 
 });
 
-define('reanimator',['require','exports','module','reanimator/plugins/date','reanimator/plugins/interrupts','reanimator/plugins/random','reanimator/plugins/document-create-event','reanimator/plugins/dom','reanimator/plugins/dom-content-loaded','reanimator/plugins/xhr','reanimator/plugins/local-storage'],function (require, exports, module) {
-/* vim: set et ts=2 sts=2 sw=2: */
+define('reanimator',['require','exports','module','reanimator/plugins/date','reanimator/plugins/interrupts','reanimator/plugins/random','reanimator/plugins/scroll','reanimator/plugins/form','reanimator/plugins/document-create-event','reanimator/plugins/dom','reanimator/plugins/dom-content-loaded','reanimator/plugins/xhr','reanimator/plugins/local-storage'],function (require, exports, module) {/* vim: set et ts=2 sts=2 sw=2: */
 
 // JavaScript standard library
 require('reanimator/plugins/date');
 require('reanimator/plugins/interrupts');
 require('reanimator/plugins/random');
+require('reanimator/plugins/scroll');
+require('reanimator/plugins/form');
 
 // DOM
 require('reanimator/plugins/document-create-event');
@@ -2196,4 +2311,4 @@ require('reanimator/plugins/local-storage');
 
 });
 require("reanimator");
-}(this))
+}(this));
