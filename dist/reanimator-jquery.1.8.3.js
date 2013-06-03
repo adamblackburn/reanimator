@@ -792,6 +792,11 @@ jQuery.extend({
 
 	// Handle when the DOM is ready
 	ready: function( wait ) {
+		console.log("ready called!");
+		if ( wait !== true && jQuery.isReady !== true) {
+			console.log("ready-but-waiting triggered!");
+			jQuery( document ).trigger("ready-but-waiting").off("ready-but-waiting");
+		}
 
 		// Abort if there are pending holds or we're already ready
 		if ( wait === true ? --jQuery.readyWait : jQuery.isReady ) {
@@ -3674,6 +3679,8 @@ jQuery.Event = function( src, props ) {
 	}
 
 	// Create a timestamp if incoming event doesn't have one
+    console.log('have timestamp: ' + (src && src.timeStamp));
+    console.log('event is: ' + src);
 	this.timeStamp = src && src.timeStamp || jQuery.now();
 
 	// Mark it as fixed

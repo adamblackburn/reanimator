@@ -445,8 +445,17 @@ function capture(config) {
     events: []
   };
 
+
   for (var k in plugins) {
     plugins[k].capture(this.state.log, config);
+  }
+}
+
+function pre(log) {
+  for (var k in plugins) {
+    if (plugins[k].pre !== undefined) {
+        plugins[k].pre(log);
+    }
   }
 }
 
@@ -473,6 +482,12 @@ replay.loop = function replayLoop() {
   var event = log.events.pop();
   var delay, now;
 
+  console.log(event);
+
+  if (event.type == 'UIEvent') {
+    event.type = 'dom';
+    event.details.type = 'UIEvent';
+  }
   var replayer = plugins[event.type].replay;
   if (!replayer) {
     throw 'Cannot replay event of type "' + event.type + '"';
@@ -512,7 +527,7 @@ function flush() {
     throw 'Must call capture before calling flush';
   }
 
-  return JSON.parse(JSON.stringify(this.state.log));
+  return this.state.log;
 }
 
 function cleanUp() {
@@ -551,6 +566,17 @@ module.exports = global.Reanimator = {
    * The log is reset whenever this method is called.
    */
   capture: capture,
+
+  /**
+   * ## Reanimator.pre
+   * **Actions that must be taken before loading a page to replay**
+   *
+   * Call this method from a page with the same origin as the page that
+   * you wish to replay, but before loading the replay page. This
+   * allows setting some state (such as localStorage) that may not be
+   * set correctly using after the page has begun loading.
+   */
+  pre: pre,
 
   /**
    * ## Reanimator.replay
@@ -729,8 +755,10 @@ capture_Date.now = function capture_Date_now () {
 };
 
 function replay_Date () {
-  return _Date.
+    var retdate = _Date.
     apply(this, [true].concat(Array.prototype.slice.call(arguments)));
+
+    return retdate; //_Date.
 }
 
 replay_Date.prototype = _Date_prototype;
@@ -750,13 +778,51 @@ Reanimator.plug('date', {
   capture: function capture(log, config) {
     _log = log;
     _log.dates = [];
+    _log.date_traces = [];
+    /*_log.dates.oldPush = _log.dates.push;
+
+    _log.dates.push = function(a) {
+        var stacktrace = null;
+        try {
+            throw new Error();
+        } catch (e) {
+            stacktrace = e.stack;
+        }
+
+        console.log(a);
+
+        _log.date_traces.push(stacktrace);
+        _log.dates.oldPush(a);
+    }*/
+
     global.Date = capture_Date;
   },
 
   beforeReplay: function replay(log, config) {
     _log = log;
     _log.dates = (_log.dates || []).slice().reverse();
+
+    /*_log.dates.oldPop = _log.dates.pop;
+    _log.dates.pop = function() {
+        var old_stacktrace = _log.date_traces.pop();
+        /*console.log('logged trace: ' + old_stacktrace);
+        var stacktrace = null;
+        try {
+            throw new Error();
+        } catch (e) {
+            stacktrace = e.stack;
+        }
+        console.log('this trace: ' + stacktrace);*/
+
+     //   return _log.dates.pop();
+    //};
+
+
+
+    _log.date_traces = (_log.date_traces || []).slice().reverse();
+
     global.Date = replay_Date;
+    console.log('replaying dates!');
   },
 
   cleanUp: function () {
@@ -1070,6 +1136,84 @@ Reanimator.plug('form', {
 
 });
 
+define('reanimator/plugins/hashchange',['require','exports','module','../core'],function (require, exports, module) {/* vim: set et ts=2 sts=2 sw=2: */
+/*jshint evil:true */
+var Reanimator = require('../core');
+var _native;
+
+Reanimator.plug('hashchange', {
+  init: function init(native) {
+    _native = native;
+    console.log('hashchange init');
+  },
+
+  capture: function capture(log, config) {
+    _log = log;
+
+    $(window).on("hashchange", function () {
+      entry = {
+        time: _native.Date.now(),
+        type: 'hashchange',
+        details: {newhash: window.location.hash}
+      };
+      if (_log) {
+        _log.events.push(entry)
+      }
+    });
+  },
+
+  replay: function (entry) {
+    console.log('setting hash: ' + entry.details.newhash);
+    window.location.hash = entry.details.newhash;
+  },
+
+  beforeReplay: function replay(log, config) {
+  },
+
+  cleanUp: function () {
+    _log = null;
+    _native = null;
+  }
+});
+
+});
+
+define('reanimator/plugins/markend',['require','exports','module','../core'],function (require, exports, module) {/* vim: set et ts=2 sts=2 sw=2: */
+/*jshint evil:true */
+var Reanimator = require('../core');
+var _log, _native;
+
+Reanimator.plug('finished', {
+  init: function init(native) {
+    _native = native;
+  },
+
+  capture: function capture(log, config) {
+    _log = log;
+  },
+
+  replay: function (entry) {
+      console.log('replay finished');
+      $(document).trigger('reanimator-finished');
+  },
+
+  beforeReplay: function replay(log, config) {
+  },
+
+  cleanUp: function () {
+    if (_log) {
+      entry = {
+        time: _native.Date.now(),
+        type: 'finished',
+        details: {}
+      };
+      _log.events.push(entry);
+    }
+  }
+});
+
+});
+
 define('reanimator/plugins/document-create-event',['require','exports','module','../core'],function (require, exports, module) {/* vim: set et ts=2 sts=2 sw=2: */
 var Reanimator = require('../core');
 
@@ -1376,7 +1520,13 @@ function dom_replay(entry) {
   details.relatedTarget =
     serialization.traverseToElement(details.relatedTarget);
 
+  if ('newURL' in entry.details.details && 'oldURL' in entry.details.details) {
+      console.log('saw hashchange event - not dispatching event');
+      return;
+  }
+
   var event = create(entry.details.type, entry.details.details);
+
   // restore related target in entry
   details.relatedTarget = relatedTarget;
 
@@ -2269,6 +2419,12 @@ Reanimator.plug('local-storage', {
         state: snapshot()
     };
   },
+  pre: function(log) {
+      console.log("localStorage pre called");
+      var snap = JSON.stringify(snapshot());
+      restore(log.localStorage.state);
+      localStorage.setItem('__reanimator_presnap__', snap);
+  },
   beforeReplay: function (log, config) {
     var k;
     _capture = false;
@@ -2280,11 +2436,12 @@ Reanimator.plug('local-storage', {
     _log.localStorage.preReplayState = snapshot();
 
     _log.localStorage.state = _log.localStorage.state || [];
-    restore(_log.localStorage.state);
   },
-  cleanUp: function xhr_cleanUp() {
-    if (!_capture)
-      restore(_log.localStorage.preReplayState || []);
+  cleanUp: function localStorage_cleanUp() {
+    var presnap = localStorage.getItem('__reanimator_presnap__');
+    if (presnap)
+        restore(JSON.parse(presnap));
+
     window.localStorage.getItem = _native.localStorage_getItem;
     window.localStorage.setItem = _native.localStorage_setItem;
     window.localStorage.clear = _native.localStorage_clear;
@@ -2293,7 +2450,7 @@ Reanimator.plug('local-storage', {
 
 });
 
-define('reanimator',['require','exports','module','reanimator/plugins/date','reanimator/plugins/interrupts','reanimator/plugins/random','reanimator/plugins/scroll','reanimator/plugins/form','reanimator/plugins/document-create-event','reanimator/plugins/dom','reanimator/plugins/dom-content-loaded','reanimator/plugins/xhr','reanimator/plugins/local-storage'],function (require, exports, module) {/* vim: set et ts=2 sts=2 sw=2: */
+define('reanimator',['require','exports','module','reanimator/plugins/date','reanimator/plugins/interrupts','reanimator/plugins/random','reanimator/plugins/scroll','reanimator/plugins/form','reanimator/plugins/hashchange','reanimator/plugins/markend','reanimator/plugins/document-create-event','reanimator/plugins/dom','reanimator/plugins/dom-content-loaded','reanimator/plugins/xhr','reanimator/plugins/local-storage'],function (require, exports, module) {/* vim: set et ts=2 sts=2 sw=2: */
 
 // JavaScript standard library
 require('reanimator/plugins/date');
@@ -2301,6 +2458,8 @@ require('reanimator/plugins/interrupts');
 require('reanimator/plugins/random');
 require('reanimator/plugins/scroll');
 require('reanimator/plugins/form');
+require('reanimator/plugins/hashchange');
+require('reanimator/plugins/markend');
 
 // DOM
 require('reanimator/plugins/document-create-event');
