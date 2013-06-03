@@ -3679,8 +3679,6 @@ jQuery.Event = function( src, props ) {
 	}
 
 	// Create a timestamp if incoming event doesn't have one
-    console.log('have timestamp: ' + (src && src.timeStamp));
-    console.log('event is: ' + src);
 	this.timeStamp = src && src.timeStamp || jQuery.now();
 
 	// Mark it as fixed

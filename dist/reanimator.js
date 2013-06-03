@@ -482,12 +482,13 @@ replay.loop = function replayLoop() {
   var event = log.events.pop();
   var delay, now;
 
-  console.log(event);
-
+  // hack to fix UIEvent replay
+  // haven't look into this at all
   if (event.type == 'UIEvent') {
     event.type = 'dom';
     event.details.type = 'UIEvent';
   }
+
   var replayer = plugins[event.type].replay;
   if (!replayer) {
     throw 'Cannot replay event of type "' + event.type + '"';
@@ -527,6 +528,8 @@ function flush() {
     throw 'Must call capture before calling flush';
   }
 
+  // return the log
+  // TODO: prune/remove recursion from log
   return this.state.log;
 }
 
@@ -755,11 +758,9 @@ capture_Date.now = function capture_Date_now () {
 };
 
 function replay_Date () {
-    var retdate = _Date.
+  return _Date.
     apply(this, [true].concat(Array.prototype.slice.call(arguments)));
-
-    return retdate; //_Date.
-}
+};
 
 replay_Date.prototype = _Date_prototype;
 replay_Date.UTC = global.Date.UTC.bind(global.Date);
@@ -778,7 +779,7 @@ Reanimator.plug('date', {
   capture: function capture(log, config) {
     _log = log;
     _log.dates = [];
-    _log.date_traces = [];
+    // _log.date_traces = [];
     /*_log.dates.oldPush = _log.dates.push;
 
     _log.dates.push = function(a) {
@@ -819,10 +820,9 @@ Reanimator.plug('date', {
 
 
 
-    _log.date_traces = (_log.date_traces || []).slice().reverse();
+    // _log.date_traces = (_log.date_traces || []).slice().reverse();
 
     global.Date = replay_Date;
-    console.log('replaying dates!');
   },
 
   cleanUp: function () {
@@ -1520,6 +1520,7 @@ function dom_replay(entry) {
   details.relatedTarget =
     serialization.traverseToElement(details.relatedTarget);
 
+  // TODO: better way to grab hashchange events
   if ('newURL' in entry.details.details && 'oldURL' in entry.details.details) {
       console.log('saw hashchange event - not dispatching event');
       return;
