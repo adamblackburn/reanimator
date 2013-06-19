@@ -41,6 +41,77 @@ source directory.
 The built files will be placed in the dist/ directory. The demos will use
 the files in dist/ when run.
 
+## Plugins
+
+### Existing plugins
+
+#### date.js
+
+The date plugin captures all calls to get the current system time and
+records them for replay. The plugin overwrite the Date object to ensure
+that all calls are recorded. During replay, the Date object is replaced
+with one that returns the recorded values.
+
+#### document-create-event.js
+
+This plugin replaces document.createEvent with a function that sets
+some reanimator-specific properties to ensure correct recording.
+
+#### dom-content-loaded.js
+
+Replay the DOMContentLoaded event at the appropriate time. The plugin
+saves the details from the recording, but waits until the DOM is loaded
+to replay the event.
+
+#### dom.js
+
+Record DOM events through JQuery and replay them at the appropriate
+time.
+
+#### form.js
+
+Record form change events and replay them, including inserting the data
+into text boxes and textareas on replay.
+
+#### hashchange.js
+
+Record and replay hashchange events in order to faciliate proper
+navigation during replay.
+
+#### interrupts.js
+
+Handles recording and replay of time-related functions, including
+setTimeout and setInterval.
+
+#### local-storage.js
+
+Resets the state of localStorage during load and reverts it on page
+unload to ensure that the replay has accurate localStorage. Requires
+a splash page to push the previous localStorage into localStorage
+before the replay page is loaded.
+
+#### markend.js
+
+Marks the end of the replay in the log. Will trigger a
+reanimator-finished event on the document object when the replay is
+completed. Listeners for this event can cause actions to occur after
+the replay is complete.
+
+#### random.js
+
+Records and replays all calls to the Math.random function to ensure
+that the replay is accurate.
+
+#### scroll.js
+
+Records scroll events and replays them during the replay. Only works
+on body scrolling.
+
+#### xhr.js
+
+Records XmlHttpRequests and replays them at the appropriate time
+during the replay.
+
 ## Adding plugins
 
 Plugins can be added by adding a file in lib/reanimator/plugins which
@@ -50,7 +121,17 @@ build script to include the plugin in the build.
 # Limitations
 
 At this time, CSS mouse-related (notably, hover) events are not recorded or
-replayed.
+replayed. Form data may not be filled in correctly during replay. Any pages
+using frames or iframes will most likely not replay correctly.
+
+You currently must use the included JQuery 1.8.3 library.
+
+Currently, there is no infrastructure for easy record/replay. This is
+in progress but not done.
+
+Attaching recording capability to an existing application make take
+significant work to ensure that all sources of non-determinism are
+properly eliminated.
 
 # API
 
