@@ -529,8 +529,7 @@ function flush() {
   }
 
   // return the log
-  // TODO: prune/remove recursion from log
-  return this.state.log;
+  return JSON.parse(JSON.prune(this.state.log));
 }
 
 function cleanUp() {
