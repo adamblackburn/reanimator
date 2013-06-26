@@ -121,8 +121,11 @@ build script to include the plugin in the build.
 # Limitations
 
 At this time, CSS mouse-related (notably, hover) events are not recorded or
-replayed. Form data may not be filled in correctly during replay. Any pages
-using frames or iframes will most likely not replay correctly.
+replayed. Form data may not be filled in correctly during replay, although
+textboxes and textareas should be fine. Any pages using frames or iframes
+will likely not replay correctly.
+
+Scrolling in areas other than the window will not be replayed.
 
 You currently must use the included JQuery 1.8.3 library.
 
