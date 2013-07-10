@@ -29,6 +29,14 @@ Howell](http://research.microsoft.com/en-us/people/howell/).
 [Tile game](http://waterfallengineering.github.com/reanimator/tile-game/index.html)
 There is a functional block demo included in the demos/ directory.
 
+[Todo application](http://reanimator-demos.s3-website-us-east-1.amazonaws.com/index.html)
+The JQuery TodoMVC application, renanimated and hooked to replay-viewer. After adding item,
+click the Replay Viewer link at the bottom of the application to go to replay-viewer. Wait
+a few seconds, and refresh the page. You replay should be listed at the top.
+
+For more fun, open the todo application on your phone or tablet, and then watch the replay
+on your computer.
+
 # Development
 ## Building
 
