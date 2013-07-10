@@ -1,0 +1,29 @@
+<html>
+<head>
+<title>
+Loading replay...
+</title>
+<script>
+disableCapture = 1;
+</script>
+    <script src="js/reanimator/reanimator.js"></script>
+    <script src="js/reanimator/reanimator-jquery.1.8.3.js"></script>
+<script>
+    $(window).on('message', function (e) {
+      console.log("got message; executed pre handlers");
+      var log = JSON.parse(e.originalEvent.data.log);
+      var path = e.originalEvent.data.path;
+      Reanimator.pre(log);
+      localStorage.setItem('__reanimator_log__', e.originalEvent.data.log);
+
+      setTimeout(function() {
+	    console.log("sending to " + path + "?replay")
+	    window.location = path + "?replay";
+  	  }, 1000);
+    });
+</script>
+</head>
+<body>
+Loading replay...
+</body>
+</html>
