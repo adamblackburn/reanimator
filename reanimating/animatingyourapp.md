@@ -24,7 +24,15 @@ Includes these three lines as the first scripts in the page you wish to reanimat
 
 ## Adding Reanimator's files
 
-You need to place `js/reanimator` directory in your application. This includes the `reanimator.js`, `reanimator-jquery.1.8.3.js`, and `reanimator-load.js`. You can change the directory name from `js/reanimator` as long as you update the script tags from the previous step.
+### JavaScript
+
+You need to create the `js/reanimator` directory in your application. This includes the `reanimator.js`, `reanimator-jquery.1.8.3.js`, and `reanimator-load.js`. You can change the directory name from `js/reanimator` as long as you update the script tags from the previous step.
+
+Get `reanimator.js` and `reanimator-jquery.1.8.3.js` from the `dist` directory in this repository. `reanimator-load.js` is contained in the `reanimating` directory, with these instructions.
+
+### pre
+
+The `pre` script allow reanimator to set up the environment before the page loads. It must have the same origin as the page to replay and (for no particular technical reason) must be loaded from the url `/pre` on your server. This can be changed by modifying replay-viewer. Configure your application to serve the `/pre` page correctly.
 
 ## Change your application ID
 
@@ -39,3 +47,7 @@ If you host your own replay server, you can disable viewing of replays by removi
 ## Upload the files
 
 Reanimator is now set up. You should be able to open your application and use it normally. When the page is closed, the replay will be uploaded to the replay viewer and you should be able to go to http://replay-viewer.appspot.com/app/XXXXXXX to view the replays.
+
+## Recording
+
+You should now be able to go to your site and record a replay. Please note that URLs such as `http://example.com` don't work - you must use `http://example.com/index.html` for replay-viewer to work correctly.
